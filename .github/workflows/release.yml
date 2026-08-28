@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  workflow_dispatch
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - name: Windows x64
+          toolchain: stable-x86_64-pc-windows-msvc
+          image: windows-latest
+        - name: Linux x64
+          toolchain: stable-x86_64-unknown-linux-gnu
+          image: ubuntu-latest
+    runs-on: ${{ matrix.image }}
+    name: Build ${{ matrix.name }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+      with:
+        submodules: true
+    - name: Patch
+      run: git apply ../patches/*.patch
+      shell: bash
+      working-directory: subtitler
+    - name: Setup Toolchain
+      run: |
+        rustup toolchain install ${{ matrix.toolchain }}
+        rustup default ${{ matrix.toolchain }}
+    - name: Extract Version
+      run: export CARGO_VERSION=$(sed -nE 's/^version *= *"([0-9.]+)"$/\1/p' Cargo.toml)
+      shell: bash
+    - name: Build
+      run: cargo build --release --verbose
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: v${{ env.CARGO_VERSION }}
+        tag_name: v${{ env.CARGO_VERSION }}
+        body: "Stable release of **Subtitle Retime**, version **${{ env.CARGO_VERSION }}**"
+        prerelease: false
+        draft: true
+        files: target/release/subtitle-retime target/release/subtitle-retime.exe
