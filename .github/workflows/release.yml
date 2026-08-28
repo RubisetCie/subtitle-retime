@@ -28,24 +28,27 @@ jobs:
       with:
         submodules: true
     - name: Patch
-      run: git apply ../patches/*.patch
+      run: git apply --verbose ../patches/*.patch
       shell: bash
       working-directory: subtitler
     - name: Setup Toolchain
       run: |
         rustup toolchain install ${{ matrix.toolchain }}
         rustup default ${{ matrix.toolchain }}
-    - name: Extract Version
-      run: export CARGO_VERSION=$(sed -nE 's/^version *= *"([0-9.]+)"$/\1/p' Cargo.toml)
+    - id: version
+      name: Extract Version
+      run: echo "version=$(sed -nE 's/^version *= *"([0-9.]+)"$/\1/p' Cargo.toml)" >> "$GITHUB_OUTPUT"
       shell: bash
     - name: Build
       run: cargo build --release --verbose
     - name: Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
-        name: v${{ env.CARGO_VERSION }}
-        tag_name: v${{ env.CARGO_VERSION }}
-        body: "Stable release of **Subtitle Retime**, version **${{ env.CARGO_VERSION }}**"
+        name: v${{ steps.version.outputs.version }}
+        tag_name: v${{ steps.version.outputs.version }}
+        body: "Stable release of **Subtitle Retime**, version **${{ steps.version.outputs.version }}**"
         prerelease: false
         draft: true
-        files: target/release/subtitle-retime target/release/subtitle-retime.exe
+        files: |
+          target/release/subtitle-retime
+          target/release/subtitle-retime.exe
