@@ -391,7 +391,7 @@ async fn main() {
                     Some(Format::Sami) => "smi",
                     Some(Format::Ttml) => "ttml",
                     Some(Format::Lrc) => "lrc",
-                    Some(Format::Mpl2) => "mpl2",
+                    Some(Format::Mpl2) => "mpl",
                     Some(Format::EbuStl) => "stl",
                     Some(Format::Dfxp) => "dfxp",
                     Some(Format::Whisper) => "whisper",
