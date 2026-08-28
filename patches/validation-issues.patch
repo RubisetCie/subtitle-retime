@@ -1,0 +1,84 @@
+From 21edb21a61c5b67fc37c357422a047b23788462b Mon Sep 17 00:00:00 2001
+From: Matthieu Carteron <rubisetcie@gmail.com>
+Date: Mon, 24 Aug 2026 14:33:47 +0200
+Subject: [PATCH] Added more validation issues.
+
+---
+ src/model/validation.rs | 25 ++++++++++++++++++++-----
+ 1 file changed, 20 insertions(+), 5 deletions(-)
+
+diff --git a/src/model/validation.rs b/src/model/validation.rs
+index dae7268..4e3235b 100644
+--- a/src/model/validation.rs
++++ b/src/model/validation.rs
+@@ -1,4 +1,5 @@
+ use serde::{Deserialize, Serialize};
++use crate::utils::format_timestamp;
+ 
+ #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+ pub enum ValidationIssue {
+@@ -38,6 +39,11 @@ pub enum ValidationIssue {
+     cps: f64,
+     max_cps: f64,
+   },
++  WpmTooHigh {
++    index: usize,
++    wpm: f64,
++    max_wpm: f64,
++  },
+ }
+ 
+ impl std::fmt::Display for ValidationIssue {
+@@ -56,14 +62,15 @@ impl ValidationIssue {
+         start_b,
+       } => {
+         format!(
+-          "subtitle {index_a} (ends at {end_a}ms) overlaps with subtitle {index_b} (starts at {start_b}ms)"
++          "subtitle {index_a} (ends at {end_a}) overlaps with subtitle {index_b} (starts at {start_b})",
++          end_a = format_timestamp(*end_a, "WebVTT"), start_b = format_timestamp(*start_b, "WebVTT")
+         )
+       }
+       ValidationIssue::NegativeDuration { index, start, end } => {
+-        format!("subtitle {index} has negative duration: {start}ms -> {end}ms")
++        format!("subtitle {index} has negative duration: {start} -> {end}", start = format_timestamp(*start, "WebVTT"), end = format_timestamp(*end, "WebVTT"))
+       }
+       ValidationIssue::ZeroDuration { index, time } => {
+-        format!("subtitle {index} has zero duration at {time}ms")
++        format!("subtitle {index} has zero duration at {time}", time = format_timestamp(*time, "WebVTT"))
+       }
+       ValidationIssue::DecreasingStartTime {
+         index,
+@@ -71,7 +78,8 @@ impl ValidationIssue {
+         curr_start,
+       } => {
+         format!(
+-          "subtitle {index} starts at {curr_start}ms before previous subtitle's start time {prev_start}ms"
++          "subtitle {index} starts at {curr_start} ms before previous subtitle's start time {prev_start}",
++          prev_start = format_timestamp(*prev_start, "WebVTT")
+         )
+       }
+       ValidationIssue::TooLongGap {
+@@ -80,7 +88,7 @@ impl ValidationIssue {
+         curr_start,
+         gap_ms,
+       } => {
+-        format!("subtitle {index}: {gap_ms}ms gap between {prev_end}ms and {curr_start}ms")
++        format!("subtitle {index}: {gap_ms} ms gap between {prev_end} and {curr_start}", prev_end = format_timestamp(*prev_end, "WebVTT"), curr_start = format_timestamp(*curr_start, "WebVTT"))
+       }
+       ValidationIssue::TextTooLong {
+         index,
+@@ -96,6 +104,13 @@ impl ValidationIssue {
+       } => {
+         format!("subtitle {index} has {cps:.1} chars/second (max recommended: {max_cps:.1})")
+       }
++      ValidationIssue::WpmTooHigh {
++        index,
++        wpm,
++        max_wpm,
++      } => {
++        format!("subtitle {index} has {wpm:.1} words/minute (max recommended: {max_wpm:.1})")
++      }
+     }
+   }
+ }
+-- 

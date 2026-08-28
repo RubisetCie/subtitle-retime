@@ -1,0 +1,13 @@
+[package]
+name = "subtitle-retime"
+description = "A CLI tool to help with subtitle timing"
+version = "1.0.0"
+edition = "2024"
+categories = ["command-line-utilities"]
+license = "GPL-3.0-or-later"
+readme = "README.md"
+repository = "https://github.com/rust-lang/cargo"
+
+[dependencies]
+subtitler = { path = "./subtitler" } # "2.6.1"
+tokio = "^1"

@@ -1,0 +1,55 @@
+From 502cb858d787c76c7a4b149e3a7d776afbd4d2f6 Mon Sep 17 00:00:00 2001
+From: Matthieu Carteron <rubisetcie@gmail.com>
+Date: Mon, 24 Aug 2026 10:20:24 +0200
+Subject: [PATCH] Added immutable version of subtitle start and end.
+
+---
+ src/model/subtitle.rs | 4 ++++
+ src/srt.rs            | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/src/model/subtitle.rs b/src/model/subtitle.rs
+index ddb68cf..59ef7e6 100644
+--- a/src/model/subtitle.rs
++++ b/src/model/subtitle.rs
+@@ -30,6 +30,8 @@ pub struct Subtitle {
+   pub index: Option<usize>,
+   pub start: u64,
+   pub end: u64,
++  pub istart: u64,
++  pub iend: u64,
+   pub text: String,
+   #[serde(skip_serializing_if = "Option::is_none")]
+   pub settings: Option<String>,
+@@ -50,6 +52,8 @@ impl Subtitle {
+       index: None,
+       start,
+       end,
++      istart: start,
++      iend: end,
+       settings: None,
+       text: text.to_string(),
+       text_parts: SmallVec::new(),
+diff --git a/src/srt.rs b/src/srt.rs
+index d97ea0e..e1e8cf2 100644
+--- a/src/srt.rs
++++ b/src/srt.rs
+@@ -182,6 +182,8 @@ fn handle_index_or_ts(
+       index: Some(index),
+       start: 0,
+       end: 0,
++      istart: 0,
++      iend: 0,
+       text: String::new(),
+       settings: None,
+       text_parts: SmallVec::new(),
+@@ -327,6 +329,8 @@ impl<'a> Iterator for SrtStream<'a> {
+               index: Some(index),
+               start: 0,
+               end: 0,
++              istart: 0,
++              iend: 0,
+               text: String::new(),
+               settings: None,
+               text_parts: SmallVec::new(),
+-- 

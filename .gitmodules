@@ -1,0 +1,4 @@
+[submodule "subtitler"]
+	path = subtitler
+	url = https://github.com/subtitle-rs/subtitler.git
+	branch = v2.6.1
