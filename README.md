@@ -28,6 +28,7 @@ subtitle-retime -n -validate my-subtitle.srt
 - **Shifting** subtitles uniformly.
 - **Changing speed of subtitles**, by a speed factor.
 - **Changing framerate** of subtitles.
+- **Contracting** and **expanding** subtitles.
 - **Copying all timings from a reference** subtitle file.
 - **Creating a gap** between subtitles when it's below a threshold.
 

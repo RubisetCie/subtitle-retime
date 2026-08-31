@@ -12,6 +12,7 @@ use crate::operations::op_shift::OpShift;
 use crate::operations::op_speed::OpSpeed;
 use crate::operations::op_rate::OpRate;
 use crate::operations::op_reference::OpReference;
+use crate::operations::op_expand::OpExpand;
 use crate::operations::op_gap::OpGap;
 use crate::operations::op_set_gap::OpSetGap;
 use crate::operations::op_set_cps::OpSetCps;
@@ -59,7 +60,9 @@ Functions:
   -shift <s>      : Shift selected subtitles by a time amount (seconds).
   -speed <s>      : Change speed of selected subtitles (factor).
   -rate <a> <b>   : Change speed from one frames per seconds to another.
-  -reference <f>  : Apply all subtitle timings from a reference file.
+  -reference <f>  : Apply subtitle timings from a reference file.
+  -contract <v>   : Contract subtitles by a time amount (seconds).
+  -expand <v>     : Expand subtitles by a time amount (seconds).
   -gap <m>        : Enarge the gap between subtitles if lower than threshold (set-gap).
                     Multiple trimming modes are available:
                       start: trim the start of the subtitle.
@@ -197,6 +200,26 @@ fn parse_args(options: &mut Options) {
                         argstack.clear();
                     }
                 },
+                // Contract operation
+                OpExpand::ARG_ID_CONTRACT => {
+                    if argstack.len() >= 1 {
+                        options.operations.push(Box::new(OpExpand::new(
+                            unsafe { -parse_time_signed(&argstack.pop().unwrap_unchecked()) },
+                        )));
+                        argstackid = 0;
+                        argstack.clear();
+                    }
+                },
+                // Expand operation
+                OpExpand::ARG_ID_EXPAND => {
+                    if argstack.len() >= 1 {
+                        options.operations.push(Box::new(OpExpand::new(
+                            unsafe { parse_time_signed(&argstack.pop().unwrap_unchecked()) },
+                        )));
+                        argstackid = 0;
+                        argstack.clear();
+                    }
+                },
                 // Gap operation
                 OpGap::ARG_ID => {
                     if argstack.len() >= 1 {
@@ -303,6 +326,8 @@ fn parse_args(options: &mut Options) {
                 "-speed"               => argstackid = OpSpeed::ARG_ID,
                 "-rate"                => argstackid = OpRate::ARG_ID,
                 "-reference"           => argstackid = OpReference::ARG_ID,
+                "-contract"            => argstackid = OpExpand::ARG_ID_CONTRACT,
+                "-expand"              => argstackid = OpExpand::ARG_ID_EXPAND,
                 "-gap"                 => argstackid = OpGap::ARG_ID,
                 "-set-gap"             => argstackid = OpSetGap::ARG_ID,
                 "-set-cps"             => argstackid = OpSetCps::ARG_ID,
@@ -354,10 +379,9 @@ async fn main() {
     };
     let mut shared_state = SharedState::new();
 
-    let single: bool = options.files.len() == 1;
     let dir: bool = options.output.is_dir() || options.dry;
 
-    if single && !dir {
+    if options.files.len() > 1 && !dir {
         eprintln!("Error: Output must be a directory when multiple inputs!");
         process::exit(3);
     }

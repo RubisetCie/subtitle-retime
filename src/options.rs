@@ -46,7 +46,7 @@ pub fn parse_time_signed(string: &str) -> i64 {
         eprintln!("Error: {} is not a parseable argument!", string);
         process::exit(2);
     }
-    return unsafe { (res.unwrap_unchecked() * 100.0) as i64 }; // Convert to milliseconds
+    return unsafe { (res.unwrap_unchecked() * 1000.0) as i64 }; // Convert to milliseconds
 }
 
 pub fn parse_time_unsigned(string: &str) -> u64 {
@@ -55,13 +55,13 @@ pub fn parse_time_unsigned(string: &str) -> u64 {
         eprintln!("Error: {} is not a parseable argument!", string);
         process::exit(2);
     }
-    return unsafe { (res.unwrap_unchecked() * 100.0) as u64 }; // Convert to milliseconds
+    return unsafe { (res.unwrap_unchecked() * 1000.0) as u64 }; // Convert to milliseconds
 }
 
 pub fn parse_time_or_timestamp(string: &str) -> u64 {
     let res = string.parse::<f32>();
     if res.is_ok() {
-        return unsafe { (res.unwrap_unchecked() * 100.0) as u64 }; // Convert to milliseconds
+        return unsafe { (res.unwrap_unchecked() * 1000.0) as u64 }; // Convert to milliseconds
     }
     let res = subtitler::utils::parse_timestamp(string, subtitler::model::Format::Vtt);
     if res.is_ok() {

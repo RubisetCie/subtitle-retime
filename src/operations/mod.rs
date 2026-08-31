@@ -7,6 +7,7 @@ pub mod op_shift;
 pub mod op_speed;
 pub mod op_rate;
 pub mod op_reference;
+pub mod op_expand;
 pub mod op_gap;
 pub mod op_set_gap;
 pub mod op_set_cps;
