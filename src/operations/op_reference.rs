@@ -52,12 +52,10 @@ impl Operation for OpReference {
             eprintln!("Warning: The reference ({}) and the file ({}) doesn't have the same number of subtitles", reference_subtitles.len(), current_subtitles.len());
         }
 
-        for s in current_subtitles {
+        for (i, s) in current_subtitles.into_iter().enumerate() {
             if !st.selector.select(s) { continue; }
-            if s.index.is_some() { break; }
-            let index = unsafe { s.index.unwrap_unchecked() };
-            if index >= reference_subtitles.len() { break; }
-            let rs = &reference_subtitles[index];
+            if i >= reference_subtitles.len() { break; }
+            let rs = &reference_subtitles[i];
 
             // Copy the start and end timings
             s.start = rs.start;
