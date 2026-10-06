@@ -1,0 +1,73 @@
+From 6b2cf2bbda4e1872d5319cefb065a714376b230a Mon Sep 17 00:00:00 2001
+From: Matthieu Carteron <rubisetcie@gmail.com>
+Date: Tue, 6 Oct 2026 17:36:59 +0200
+Subject: [PATCH] Fixed style attributes disappearing when exporting to SRT and VTT.
+
+---
+ src/srt.rs | 20 +++++++++++++++++++-
+ src/vtt.rs | 20 +++++++++++++++++++-
+ 2 files changed, 38 insertions(+), 2 deletions(-)
+
+diff --git a/src/srt.rs b/src/srt.rs
+index e1e8cf2..71be682 100644
+--- a/src/srt.rs
++++ b/src/srt.rs
+@@ -421,7 +421,25 @@ pub fn to_string(subtitles: &[Subtitle]) -> String {
+     );
+     content.push_str(&timestamp);
+     content.push('\n');
+-    content.push_str(&subtitle.text);
++    if subtitle.text_parts.is_empty() {
++      content.push_str(&subtitle.text);
++    } else {
++      for p in &subtitle.text_parts {
++        if p.bold() { content.push_str("<b>"); }
++        if p.italic() { content.push_str("<i>"); }
++        if p.underline() { content.push_str("<u>"); }
++        if p.color.is_some() {
++          content.push_str("<font color=\"");
++          content.push_str(unsafe { &p.color.as_ref().unwrap_unchecked() });
++          content.push_str("\">");
++        }
++        content.push_str(&p.text);
++        if p.color.is_some() { content.push_str("</font>"); }
++        if p.underline() { content.push_str("</u>"); }
++        if p.italic() { content.push_str("</i>"); }
++        if p.bold() { content.push_str("</b>"); }
++      }
++    }
+     if i != subtitles.len() - 1 {
+       content.push('\n');
+       content.push('\n');
+diff --git a/src/vtt.rs b/src/vtt.rs
+index 31da303..b2b39ad 100644
+--- a/src/vtt.rs
++++ b/src/vtt.rs
+@@ -254,7 +254,25 @@ pub fn to_string(subtitles: &[Subtitle], header: Option<&str>) -> String {
+     }
+     content.push_str(&timestamp);
+     content.push('\n');
+-    content.push_str(&subtitle.text);
++    if subtitle.text_parts.is_empty() {
++      content.push_str(&subtitle.text);
++    } else {
++      for p in &subtitle.text_parts {
++        if p.bold() { content.push_str("<b>"); }
++        if p.italic() { content.push_str("<i>"); }
++        if p.underline() { content.push_str("<u>"); }
++        if p.voice.is_some() {
++          content.push_str("<v ");
++          content.push_str(unsafe { &p.voice.as_ref().unwrap_unchecked() });
++          content.push('>');
++        }
++        content.push_str(&p.text);
++        if p.voice.is_some() { content.push_str("</v>"); }
++        if p.underline() { content.push_str("</u>"); }
++        if p.italic() { content.push_str("</i>"); }
++        if p.bold() { content.push_str("</b>"); }
++      }
++    }
+     if i != subtitles.len() - 1 {
+       content.push('\n');
+       content.push('\n');
+-- 
