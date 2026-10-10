@@ -1,6 +1,6 @@
-From 21edb21a61c5b67fc37c357422a047b23788462b Mon Sep 17 00:00:00 2001
+From 2243e6fd6b3b39c1aafed5abc5233d96a3cf4dc6 Mon Sep 17 00:00:00 2001
 From: Matthieu Carteron <rubisetcie@gmail.com>
-Date: Mon, 24 Aug 2026 14:33:47 +0200
+Date: Sat, 10 Oct 2026 12:27:58 +0200
 Subject: [PATCH] Added more validation issues.
 
 ---
@@ -8,7 +8,7 @@ Subject: [PATCH] Added more validation issues.
  1 file changed, 20 insertions(+), 5 deletions(-)
 
 diff --git a/src/model/validation.rs b/src/model/validation.rs
-index dae7268..4e3235b 100644
+index 0d0834e..b2cc1a9 100644
 --- a/src/model/validation.rs
 +++ b/src/model/validation.rs
 @@ -1,4 +1,5 @@
@@ -17,9 +17,9 @@ index dae7268..4e3235b 100644
  
  #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
  pub enum ValidationIssue {
-@@ -38,6 +39,11 @@ pub enum ValidationIssue {
-     cps: f64,
-     max_cps: f64,
+@@ -58,6 +59,11 @@ pub enum ValidationIssue {
+     lines: usize,
+     max_lines: usize,
    },
 +  WpmTooHigh {
 +    index: usize,
@@ -29,7 +29,7 @@ index dae7268..4e3235b 100644
  }
  
  impl std::fmt::Display for ValidationIssue {
-@@ -56,14 +62,15 @@ impl ValidationIssue {
+@@ -76,14 +82,15 @@ impl ValidationIssue {
          start_b,
        } => {
          format!(
@@ -48,7 +48,7 @@ index dae7268..4e3235b 100644
        }
        ValidationIssue::DecreasingStartTime {
          index,
-@@ -71,7 +78,8 @@ impl ValidationIssue {
+@@ -91,7 +98,8 @@ impl ValidationIssue {
          curr_start,
        } => {
          format!(
@@ -58,7 +58,7 @@ index dae7268..4e3235b 100644
          )
        }
        ValidationIssue::TooLongGap {
-@@ -80,7 +88,7 @@ impl ValidationIssue {
+@@ -100,7 +108,7 @@ impl ValidationIssue {
          curr_start,
          gap_ms,
        } => {
@@ -67,9 +67,9 @@ index dae7268..4e3235b 100644
        }
        ValidationIssue::TextTooLong {
          index,
-@@ -96,6 +104,13 @@ impl ValidationIssue {
+@@ -144,6 +152,13 @@ impl ValidationIssue {
        } => {
-         format!("subtitle {index} has {cps:.1} chars/second (max recommended: {max_cps:.1})")
+         format!("subtitle {index} has {lines} lines (maximum recommended: {max_lines})")
        }
 +      ValidationIssue::WpmTooHigh {
 +        index,

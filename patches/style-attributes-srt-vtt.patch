@@ -1,18 +1,30 @@
-From 6b2cf2bbda4e1872d5319cefb065a714376b230a Mon Sep 17 00:00:00 2001
+From 6ff29ad0a1546f394f766889c5256e9685d1cf8b Mon Sep 17 00:00:00 2001
 From: Matthieu Carteron <rubisetcie@gmail.com>
-Date: Tue, 6 Oct 2026 17:36:59 +0200
+Date: Sat, 10 Oct 2026 21:13:03 +0200
 Subject: [PATCH] Fixed style attributes disappearing when exporting to SRT and VTT.
 
 ---
- src/srt.rs | 20 +++++++++++++++++++-
- src/vtt.rs | 20 +++++++++++++++++++-
- 2 files changed, 38 insertions(+), 2 deletions(-)
+ src/srt.rs | 53 ++++++++++++++++++++++++++++++++++++++++++++++++++---
+ src/vtt.rs | 53 ++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 100 insertions(+), 6 deletions(-)
 
 diff --git a/src/srt.rs b/src/srt.rs
-index e1e8cf2..71be682 100644
+index bb71fb0..ca814c4 100644
 --- a/src/srt.rs
 +++ b/src/srt.rs
-@@ -421,7 +421,25 @@ pub fn to_string(subtitles: &[Subtitle]) -> String {
+@@ -47,11 +47,9 @@ fn extract_text_parts(text: &str) -> (String, SmallVec<[TextPart; 4]>) {
+       let segment = &text[last_end..start];
+       if !segment.is_empty() {
+         plain.push_str(segment);
+-        if bold || italic || underline || color.is_some() {
+           let mut part = TextPart::new(segment, bold, italic, underline);
+           part.color = color.clone();
+           parts.push(part);
+-        }
+       }
+     }
+ 
+@@ -425,7 +423,56 @@ pub fn to_string(subtitles: &[Subtitle]) -> String {
      );
      content.push_str(&timestamp);
      content.push('\n');
@@ -20,52 +32,126 @@ index e1e8cf2..71be682 100644
 +    if subtitle.text_parts.is_empty() {
 +      content.push_str(&subtitle.text);
 +    } else {
++      let mut curr_bold: bool = false;
++      let mut curr_italic: bool = false;
++      let mut curr_underline: bool = false;
++      let mut curr_color: String = "".to_string();
 +      for p in &subtitle.text_parts {
-+        if p.bold() { content.push_str("<b>"); }
-+        if p.italic() { content.push_str("<i>"); }
-+        if p.underline() { content.push_str("<u>"); }
-+        if p.color.is_some() {
-+          content.push_str("<font color=\"");
-+          content.push_str(unsafe { &p.color.as_ref().unwrap_unchecked() });
-+          content.push_str("\">");
++        // If the part is blank, ignore styling applications
++        if !p.text.trim().is_empty() {
++          let bold = p.bold();
++          let italic = p.italic();
++          let underline = p.underline();
++          let color = p.color.clone().unwrap_or("".to_string());
++          if bold && !curr_bold {
++            content.push_str("<b>");
++          } else if !bold && curr_bold {
++            content.push_str("</b>");
++          }
++          curr_bold = bold;
++          if italic && !curr_italic {
++            content.push_str("<i>");
++          } else if !italic && curr_italic {
++            content.push_str("</i>");
++          }
++          curr_italic = italic;
++          if underline && !curr_underline {
++            content.push_str("<u>");
++          } else if !underline && curr_underline {
++            content.push_str("</u>");
++          }
++          curr_underline = underline;
++          if color != curr_color {
++            if !color.is_empty() {
++              content.push_str("<font color=\"");
++              content.push_str(&color);
++              content.push_str("\">");
++            } else {
++              content.push_str("</font>");
++            }
++          }
++          curr_color = color;
 +        }
 +        content.push_str(&p.text);
-+        if p.color.is_some() { content.push_str("</font>"); }
-+        if p.underline() { content.push_str("</u>"); }
-+        if p.italic() { content.push_str("</i>"); }
-+        if p.bold() { content.push_str("</b>"); }
 +      }
++      if !curr_color.is_empty() { content.push_str("</font>"); }
++      if curr_underline { content.push_str("</u>"); }
++      if curr_italic { content.push_str("</i>"); }
++      if curr_bold { content.push_str("</b>"); }
 +    }
      if i != subtitles.len() - 1 {
        content.push('\n');
        content.push('\n');
 diff --git a/src/vtt.rs b/src/vtt.rs
-index 31da303..b2b39ad 100644
+index f99eb1f..97b195b 100644
 --- a/src/vtt.rs
 +++ b/src/vtt.rs
-@@ -254,7 +254,25 @@ pub fn to_string(subtitles: &[Subtitle], header: Option<&str>) -> String {
+@@ -73,11 +73,9 @@ fn extract_text_parts(text: &str) -> (String, SmallVec<[TextPart; 4]>) {
+       let segment = unescape_cue_text(&text[last_end..start]);
+       if !segment.is_empty() {
+         plain.push_str(&segment);
+-        if bold || italic || underline || voice.is_some() {
+           let mut part = TextPart::new(segment.as_ref(), bold, italic, underline);
+           part.voice = voice.clone();
+           parts.push(part);
+-        }
+       }
+     }
+ 
+@@ -279,7 +277,56 @@ pub fn to_string(subtitles: &[Subtitle], header: Option<&str>) -> String {
      }
      content.push_str(&timestamp);
      content.push('\n');
--    content.push_str(&subtitle.text);
+-    content.push_str(&escape_cue_text(&subtitle.text));
 +    if subtitle.text_parts.is_empty() {
-+      content.push_str(&subtitle.text);
++      content.push_str(&escape_cue_text(&subtitle.text));
 +    } else {
++      let mut curr_bold: bool = false;
++      let mut curr_italic: bool = false;
++      let mut curr_underline: bool = false;
++      let mut curr_voice: String = "".to_string();
 +      for p in &subtitle.text_parts {
-+        if p.bold() { content.push_str("<b>"); }
-+        if p.italic() { content.push_str("<i>"); }
-+        if p.underline() { content.push_str("<u>"); }
-+        if p.voice.is_some() {
-+          content.push_str("<v ");
-+          content.push_str(unsafe { &p.voice.as_ref().unwrap_unchecked() });
-+          content.push('>');
++        // If the part is blank, ignore styling applications
++        if !p.text.trim().is_empty() {
++          let bold = p.bold();
++          let italic = p.italic();
++          let underline = p.underline();
++          let voice = p.voice.clone().unwrap_or("".to_string());
++          if bold && !curr_bold {
++            content.push_str("<b>");
++          } else if !bold && curr_bold {
++            content.push_str("</b>");
++          }
++          curr_bold = bold;
++          if italic && !curr_italic {
++            content.push_str("<i>");
++          } else if !italic && curr_italic {
++            content.push_str("</i>");
++          }
++          curr_italic = italic;
++          if underline && !curr_underline {
++            content.push_str("<u>");
++          } else if !underline && curr_underline {
++            content.push_str("</u>");
++          }
++          curr_underline = underline;
++          if voice != curr_voice {
++            if !voice.is_empty() {
++              content.push_str("<v ");
++              content.push_str(&voice);
++              content.push('>');
++            } else {
++              content.push_str("</v>");
++            }
++          }
++          curr_voice = voice;
 +        }
 +        content.push_str(&p.text);
-+        if p.voice.is_some() { content.push_str("</v>"); }
-+        if p.underline() { content.push_str("</u>"); }
-+        if p.italic() { content.push_str("</i>"); }
-+        if p.bold() { content.push_str("</b>"); }
 +      }
++      if !curr_voice.is_empty() { content.push_str("</v>"); }
++      if curr_underline { content.push_str("</u>"); }
++      if curr_italic { content.push_str("</i>"); }
++      if curr_bold { content.push_str("</b>"); }
 +    }
      if i != subtitles.len() - 1 {
        content.push('\n');
