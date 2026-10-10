@@ -11,3 +11,7 @@ repository = "https://github.com/rust-lang/cargo"
 [dependencies]
 subtitler = { path = "./subtitler" }
 tokio = "^1"
+
+[profile.release]
+strip = true
+lto = true
