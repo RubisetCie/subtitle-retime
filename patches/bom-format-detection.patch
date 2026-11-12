@@ -1,0 +1,25 @@
+From 9f2ba0ff82f27b4d2fc8f530ec71edd1c681a897 Mon Sep 17 00:00:00 2001
+From: Matthieu Carteron <rubisetcie@gmail.com>
+Date: Thu, 12 Nov 2026 17:55:58 +0100
+Subject: [PATCH] Fixed format detection not working on UTF-8-BOM.
+
+---
+ src/encoding.rs | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/encoding.rs b/src/encoding.rs
+index 9f0c400..7d474e9 100644
+--- a/src/encoding.rs
++++ b/src/encoding.rs
+@@ -88,8 +88,8 @@ pub fn decode_to_string(data: &[u8]) -> Result<String, SubtitleError> {
+ /// Unlike `decode_to_string`, this never returns an Err — useful in
+ /// `detect_format` functions where a failed decode just means "not this format".
+ pub fn try_decode_for_detection(data: &[u8]) -> Option<String> {
+-  if let Ok(s) = std::str::from_utf8(data) {
+-    return Some(s.to_string());
++  if let Ok(s) = decode_to_string(data) {
++    return Some(s);
+   }
+   let mut detector = chardetng::EncodingDetector::new(chardetng::Iso2022JpDetection::Allow);
+   detector.feed(data, true);
+-- 

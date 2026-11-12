@@ -502,7 +502,7 @@ async fn main() {
         }
         let file = subtitler::parse_bytes(unsafe { &data.as_ref().unwrap_unchecked() });
         if file.is_err() {
-            eprintln!("Error: Could not parse file: {}! Check encoding!", filename.display());
+            eprintln!("Error: Could not parse file: {}", filename.display());
             continue;
         }
 
