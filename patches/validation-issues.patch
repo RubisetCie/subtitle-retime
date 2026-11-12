@@ -1,14 +1,14 @@
-From 2243e6fd6b3b39c1aafed5abc5233d96a3cf4dc6 Mon Sep 17 00:00:00 2001
+From 026c5084d03bf250f0a26a5ab682fab3e687e581 Mon Sep 17 00:00:00 2001
 From: Matthieu Carteron <rubisetcie@gmail.com>
-Date: Sat, 10 Oct 2026 12:27:58 +0200
+Date: Thu, 12 Nov 2026 12:35:41 +0100
 Subject: [PATCH] Added more validation issues.
 
 ---
- src/model/validation.rs | 25 ++++++++++++++++++++-----
- 1 file changed, 20 insertions(+), 5 deletions(-)
+ src/model/validation.rs | 31 +++++++++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 8 deletions(-)
 
 diff --git a/src/model/validation.rs b/src/model/validation.rs
-index 0d0834e..b2cc1a9 100644
+index 31ae4b6..317d459 100644
 --- a/src/model/validation.rs
 +++ b/src/model/validation.rs
 @@ -1,4 +1,5 @@
@@ -17,9 +17,9 @@ index 0d0834e..b2cc1a9 100644
  
  #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
  pub enum ValidationIssue {
-@@ -58,6 +59,11 @@ pub enum ValidationIssue {
-     lines: usize,
-     max_lines: usize,
+@@ -69,6 +70,11 @@ pub enum ValidationIssue {
+   ImscProhibited {
+     detail: String,
    },
 +  WpmTooHigh {
 +    index: usize,
@@ -29,7 +29,7 @@ index 0d0834e..b2cc1a9 100644
  }
  
  impl std::fmt::Display for ValidationIssue {
-@@ -76,14 +82,15 @@ impl ValidationIssue {
+@@ -87,14 +93,15 @@ impl ValidationIssue {
          start_b,
        } => {
          format!(
@@ -48,7 +48,7 @@ index 0d0834e..b2cc1a9 100644
        }
        ValidationIssue::DecreasingStartTime {
          index,
-@@ -91,7 +98,8 @@ impl ValidationIssue {
+@@ -102,7 +109,8 @@ impl ValidationIssue {
          curr_start,
        } => {
          format!(
@@ -58,7 +58,7 @@ index 0d0834e..b2cc1a9 100644
          )
        }
        ValidationIssue::TooLongGap {
-@@ -100,7 +108,7 @@ impl ValidationIssue {
+@@ -111,7 +119,7 @@ impl ValidationIssue {
          curr_start,
          gap_ms,
        } => {
@@ -67,9 +67,34 @@ index 0d0834e..b2cc1a9 100644
        }
        ValidationIssue::TextTooLong {
          index,
-@@ -144,6 +152,13 @@ impl ValidationIssue {
+@@ -132,21 +140,21 @@ impl ValidationIssue {
+         duration_ms,
+         min_duration_ms,
        } => {
-         format!("subtitle {index} has {lines} lines (maximum recommended: {max_lines})")
+-        format!("subtitle {index} lasts {duration_ms}ms (minimum required: {min_duration_ms}ms)")
++        format!("subtitle {index} lasts {duration_ms} ms (minimum required: {min_duration_ms} ms)")
+       }
+       ValidationIssue::TooLongDuration {
+         index,
+         duration_ms,
+         max_duration_ms,
+       } => {
+-        format!("subtitle {index} lasts {duration_ms}ms (maximum allowed: {max_duration_ms}ms)")
++        format!("subtitle {index} lasts {duration_ms} ms (maximum allowed: {max_duration_ms} ms)")
+       }
+       ValidationIssue::TooShortGap {
+         index,
+         gap_ms,
+         min_gap_ms,
+       } => {
+-        format!("subtitle {index}: {gap_ms}ms gap before it (minimum required: {min_gap_ms}ms)")
++        format!("subtitle {index}: {gap_ms} ms gap before it (minimum required: {min_gap_ms} ms)")
+       }
+       ValidationIssue::LineCountExceeded {
+         index,
+@@ -161,6 +169,13 @@ impl ValidationIssue {
+       ValidationIssue::ImscProhibited { detail } => {
+         format!("IMSC: {detail}")
        }
 +      ValidationIssue::WpmTooHigh {
 +        index,
