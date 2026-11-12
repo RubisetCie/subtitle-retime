@@ -5,14 +5,14 @@ use crate::state::SharedState;
 /*
  * Setting characters limit structure
  */
-pub struct OpSetLimit {
+pub struct OpSetMaxLength {
     limit: usize,
 }
 
 /*
  * Argument identifier
  */
-impl OpSetLimit {
+impl OpSetMaxLength {
     pub fn new(limit: usize) -> Self {
         Self { limit }
     }
@@ -23,9 +23,9 @@ impl OpSetLimit {
 /*
  * Setting characters limit implementation
  */
-impl Operation for OpSetLimit {
+impl Operation for OpSetMaxLength {
     fn call(&self, opts: &SharedOptions, st: &mut SharedState) {
-        if opts.verbose { println!("-- Setting character limit to: {}", self.limit); }
-        st.limit = self.limit;
+        if opts.verbose { println!("-- Setting character limit per line to: {}", self.limit); }
+        st.max_cpl = self.limit;
     }
 }

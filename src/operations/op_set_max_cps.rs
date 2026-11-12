@@ -5,14 +5,14 @@ use crate::state::SharedState;
 /*
  * Setting maximum characters per second structure
  */
-pub struct OpSetCps {
+pub struct OpSetMaxCps {
     cps: f64,
 }
 
 /*
  * Argument identifier
  */
-impl OpSetCps {
+impl OpSetMaxCps {
     pub fn new(cps: f64) -> Self {
         Self { cps }
     }
@@ -23,9 +23,9 @@ impl OpSetCps {
 /*
  * Setting maximum characters per second implementation
  */
-impl Operation for OpSetCps {
+impl Operation for OpSetMaxCps {
     fn call(&self, opts: &SharedOptions, st: &mut SharedState) {
         if opts.verbose { println!("-- Setting maximum characters per second to: {}", self.cps); }
-        st.cps = self.cps;
+        st.max_cps = self.cps;
     }
 }

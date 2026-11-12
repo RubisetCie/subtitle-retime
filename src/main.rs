@@ -14,10 +14,15 @@ use crate::operations::op_rate::OpRate;
 use crate::operations::op_reference::OpReference;
 use crate::operations::op_expand::OpExpand;
 use crate::operations::op_gap::OpGap;
-use crate::operations::op_set_gap::OpSetGap;
-use crate::operations::op_set_cps::OpSetCps;
-use crate::operations::op_set_wpm::OpSetWpm;
-use crate::operations::op_set_limit::OpSetLimit;
+use crate::operations::op_set_min_gap::OpSetMinGap;
+use crate::operations::op_set_max_cps::OpSetMaxCps;
+use crate::operations::op_set_max_wpm::OpSetMaxWpm;
+use crate::operations::op_set_max_length::OpSetMaxLength;
+use crate::operations::op_set_max_lines::OpSetMaxLines;
+use crate::operations::op_set_max_duration::OpSetMaxDur;
+use crate::operations::op_set_min_duration::OpSetMinDur;
+use crate::operations::op_set_guidelines::OpSetGuidelines;
+use crate::operations::op_set_guidelines::OpSetGuidelinesPreset;
 use crate::operations::op_validate::OpValidate;
 use crate::operations::st_all::StAll;
 use crate::operations::st_from::StFrom;
@@ -43,38 +48,47 @@ fn help(prog: &str) {
 Usage: {prog} <options/functions> [--] <file-1> [<file-2> [<...>]]
 
 Options:
-  -o, --output <o>: Specify output (filename when single, directory when multiple).
-  -f, --format <f>: Specify out format (see supported formats below).
-  -n, --dry-run   : Don't output anything, just display the operations.
-  -i, --inplace   : Overwrite the input files.
-  -h, --help      : Display usage help.
-  -v, --verbose   : Increase verbosity of processing.
+  -o, --output <o>     : Specify output (filename when single, directory when multiple).
+  -f, --format <f>     : Specify out format (see supported formats below).
+  -n, --dry-run        : Don't output anything, just display the operations.
+  -i, --inplace        : Overwrite the input files.
+  -h, --help           : Display usage help.
+  -v, --verbose        : Increase verbosity of processing.
 
 Selectors:
-  -all, -whole    : Select all subtitles in the file (active by default).
-  -from <f>       : Select all subtitles after a time point.
-  -to   <t>       : Select all subtitles before a time point.
-  -between <f> <t>: Select all subtitles between two time points.
+  -all, -whole         : Select all subtitles in the file (active by default).
+  -from <f>            : Select all subtitles after a time point.
+  -to   <t>            : Select all subtitles before a time point.
+  -between <f> <t>     : Select all subtitles between two time points.
 
 Functions:
-  -shift <s>      : Shift selected subtitles by a time amount (seconds).
-  -speed <s>      : Change speed of selected subtitles (factor).
-  -rate <a> <b>   : Change speed from one frames per seconds to another.
-  -reference <f>  : Apply subtitle timings from a reference file.
-  -contract <v>   : Contract subtitles by a time amount (seconds).
-  -expand <v>     : Expand subtitles by a time amount (seconds).
-  -gap <m>        : Enarge the gap between subtitles if lower than threshold (set-gap).
-                    Multiple trimming modes are available:
-                      start: trim the start of the subtitle.
-                      end  : trim the end of the subtitle.
-                      dual : trim both the start and the end.
-                      smart: trim the subtitle that has the least of CPS.
-  -delay <s>      : Synonym for \"-shift\".
-  -set-gap <g>    : Set the minimum gap in seconds between subtitles.
-  -set-cps <c>    : Set the maximum characters per second, for next validation.
-  -set-wpm <w>    : Set the maximum words per minute, for next validation.
-  -set-limit <m>  : Set the maximum number of characters in a subtitle, for next validation.
-  -validate       : Check for timing issues.
+  -shift <s>           : Shift selected subtitles by a time amount (seconds).
+  -speed <s>           : Change speed of selected subtitles (factor).
+  -rate <a> <b>        : Change speed from one frames per seconds to another.
+  -reference <f>       : Apply subtitle timings from a reference file.
+  -contract <v>        : Contract subtitles by a time amount (seconds).
+  -expand <v>          : Expand subtitles by a time amount (seconds).
+  -gap <m>             : Enarge the gap between subtitles if lower than threshold (set-gap).
+                         Multiple trimming modes are available:
+                           start: trim the start of the subtitle.
+                           end  : trim the end of the subtitle.
+                           dual : trim both the start and the end.
+                           smart: trim the subtitle that has the least of CPS.
+  -delay <s>           : Synonym for \"-shift\".
+
+  -set-min-gap <g>     : Set the minimum gap in seconds between subtitles.
+  -set-max-wpm <w>     : Set the maximum words per minute, for next validation.
+  -set-max-cps <c>     : Set the maximum characters per second, for next validation.
+  -set-max-length <l>  : Set the maximum characters per lines, for next validation.
+  -set-max-lines <l>   : Set the maximum number of lines, for next validation.
+  -set-max-duration <t>: Set the maximum duration in seconds, for next validation.
+  -set-min-duration <t>: Set the minimum duration in seconds, for next validation.
+
+  -guideline-netflix   : Set the parameters of next validation to follow Netflix guidelines.
+  -guideline-bbc       : Set the parameters of next validation to follow BBC guidelines.
+  -guideline-ted       : Set the parameters of next validation to follow Ted guidelines.
+
+  -validate            : Check for timing/conformance issues.
 
 Examples:
   {prog} -all -shift -0.25
@@ -231,9 +245,9 @@ fn parse_args(options: &mut Options) {
                     }
                 },
                 // Set minimum gap operation
-                OpSetGap::ARG_ID => {
+                OpSetMinGap::ARG_ID => {
                     if argstack.len() >= 1 {
-                        options.operations.push(Box::new(OpSetGap::new(
+                        options.operations.push(Box::new(OpSetMinGap::new(
                             unsafe { parse_time_unsigned(&argstack.pop().unwrap_unchecked()) },
                         )));
                         argstackid = 0;
@@ -241,9 +255,9 @@ fn parse_args(options: &mut Options) {
                     }
                 },
                 // Set maximum characters per second operation
-                OpSetCps::ARG_ID => {
+                OpSetMaxCps::ARG_ID => {
                     if argstack.len() >= 1 {
-                        options.operations.push(Box::new(OpSetCps::new(
+                        options.operations.push(Box::new(OpSetMaxCps::new(
                             unsafe { parse_type(&argstack.pop().unwrap_unchecked()) },
                         )));
                         argstackid = 0;
@@ -251,9 +265,9 @@ fn parse_args(options: &mut Options) {
                     }
                 },
                 // Set maximum words per minute operation
-                OpSetWpm::ARG_ID => {
+                OpSetMaxWpm::ARG_ID => {
                     if argstack.len() >= 1 {
-                        options.operations.push(Box::new(OpSetWpm::new(
+                        options.operations.push(Box::new(OpSetMaxWpm::new(
                             unsafe { parse_type(&argstack.pop().unwrap_unchecked()) },
                         )));
                         argstackid = 0;
@@ -261,10 +275,40 @@ fn parse_args(options: &mut Options) {
                     }
                 },
                 // Set maximum number of characters operation
-                OpSetLimit::ARG_ID => {
+                OpSetMaxLength::ARG_ID => {
                     if argstack.len() >= 1 {
-                        options.operations.push(Box::new(OpSetLimit::new(
+                        options.operations.push(Box::new(OpSetMaxLength::new(
                             unsafe { parse_type(&argstack.pop().unwrap_unchecked()) },
+                        )));
+                        argstackid = 0;
+                        argstack.clear();
+                    }
+                },
+                // Set maximum number of lines operation
+                OpSetMaxLines::ARG_ID => {
+                    if argstack.len() >= 1 {
+                        options.operations.push(Box::new(OpSetMaxLines::new(
+                            unsafe { parse_type(&argstack.pop().unwrap_unchecked()) },
+                        )));
+                        argstackid = 0;
+                        argstack.clear();
+                    }
+                },
+                // Set maximum duration operation
+                OpSetMaxDur::ARG_ID => {
+                    if argstack.len() >= 1 {
+                        options.operations.push(Box::new(OpSetMaxDur::new(
+                            unsafe { parse_time_unsigned(&argstack.pop().unwrap_unchecked()) },
+                        )));
+                        argstackid = 0;
+                        argstack.clear();
+                    }
+                },
+                // Set minimum duration operation
+                OpSetMinDur::ARG_ID => {
+                    if argstack.len() >= 1 {
+                        options.operations.push(Box::new(OpSetMinDur::new(
+                            unsafe { parse_time_unsigned(&argstack.pop().unwrap_unchecked()) },
                         )));
                         argstackid = 0;
                         argstack.clear();
@@ -329,10 +373,16 @@ fn parse_args(options: &mut Options) {
                 "-contract"            => argstackid = OpExpand::ARG_ID_CONTRACT,
                 "-expand"              => argstackid = OpExpand::ARG_ID_EXPAND,
                 "-gap"                 => argstackid = OpGap::ARG_ID,
-                "-set-gap"             => argstackid = OpSetGap::ARG_ID,
-                "-set-cps"             => argstackid = OpSetCps::ARG_ID,
-                "-set-wpm"             => argstackid = OpSetWpm::ARG_ID,
-                "-set-limit"           => argstackid = OpSetLimit::ARG_ID,
+                "-set-min-gap"         => argstackid = OpSetMinGap::ARG_ID,
+                "-set-max-cps"         => argstackid = OpSetMaxCps::ARG_ID,
+                "-set-max-wpm"         => argstackid = OpSetMaxWpm::ARG_ID,
+                "-set-max-length"      => argstackid = OpSetMaxLength::ARG_ID,
+                "-set-max-lines"       => argstackid = OpSetMaxLines::ARG_ID,
+                "-set-max-duration"    => argstackid = OpSetMaxDur::ARG_ID,
+                "-set-min-duration"    => argstackid = OpSetMinDur::ARG_ID,
+                "-guideline-netflix"   => options.operations.push(Box::new(OpSetGuidelines::new(OpSetGuidelinesPreset::Netflix))),
+                "-guideline-ted"       => options.operations.push(Box::new(OpSetGuidelines::new(OpSetGuidelinesPreset::Ted))),
+                "-guideline-bbc"       => options.operations.push(Box::new(OpSetGuidelines::new(OpSetGuidelinesPreset::BBC))),
                 "-validate"            => options.operations.push(Box::new(OpValidate::new())),
                 "--" => { end = true; continue; },
                 _ => {}

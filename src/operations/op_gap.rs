@@ -65,23 +65,23 @@ impl OpGap {
  */
 impl Operation for OpGap {
     fn call(&self, opts: &SharedOptions, st: &mut SharedState) {
-        if opts.verbose { println!("-- Applying gap of: {} ms with mode: {}", st.gap, gap_mode_to_string(&self.mode)); }
+        if opts.verbose { println!("-- Applying gap of: {} ms with mode: {}", st.min_gap, gap_mode_to_string(&self.mode)); }
         let subtitles = st.subtitle.as_mut().unwrap().subtitles_mut();
         for i in 1 .. subtitles.len() {
             if subtitles[i-1].end < st.selector.begin() || subtitles[i].start > st.selector.end() { continue; }
 
             // Dig the gap
             let gap = subtitles[i].start.saturating_sub(subtitles[i-1].end);
-            if gap < st.gap {
+            if gap < st.min_gap {
                 match self.mode {
                     OpGapMode::Start => {
-                        subtitles[i].start += st.gap - gap;
+                        subtitles[i].start += st.min_gap - gap;
                     },
                     OpGapMode::End => {
-                        subtitles[i-1].end -= st.gap - gap;
+                        subtitles[i-1].end -= st.min_gap - gap;
                     },
                     OpGapMode::Dual => {
-                        let delta = st.gap - gap;
+                        let delta = st.min_gap - gap;
                         let dt_start = delta / 2;
                         let dt_end = delta - dt_start;
                         subtitles[i].start += dt_start;
@@ -92,9 +92,9 @@ impl Operation for OpGap {
                         let cps_a = subtitles[i].chars_per_second();
                         let cps_b = subtitles[i-1].chars_per_second();
                         if cps_a < cps_b {
-                            subtitles[i].start += st.gap - gap;
+                            subtitles[i].start += st.min_gap - gap;
                         } else {
-                            subtitles[i-1].end -= st.gap - gap;
+                            subtitles[i-1].end -= st.min_gap - gap;
                         }
                     },
                     OpGapMode::Invalid => break

@@ -31,8 +31,8 @@ impl Operation for OpSpeed {
         for s in st.subtitle.as_mut().unwrap().subtitles_mut() {
             if !st.selector.select(s) { continue; }
             let begin = st.selector.begin();
-            s.start = ((((s.start - begin) as f64) * self.factor).round() as u64) + begin;
-            s.end = ((((s.end - begin) as f64) * self.factor).round() as u64) + begin;
+            s.start = ((((s.start - begin) as f64) / self.factor).round() as u64) + begin;
+            s.end = ((((s.end - begin) as f64) / self.factor).round() as u64) + begin;
         }
     }
 }

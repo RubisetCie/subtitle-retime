@@ -5,14 +5,14 @@ use crate::state::SharedState;
 /*
  * Setting maximum words per minute structure
  */
-pub struct OpSetWpm {
+pub struct OpSetMaxWpm {
     wpm: f64,
 }
 
 /*
  * Argument identifier
  */
-impl OpSetWpm {
+impl OpSetMaxWpm {
     pub fn new(wpm: f64) -> Self {
         Self { wpm }
     }
@@ -23,9 +23,9 @@ impl OpSetWpm {
 /*
  * Setting maximum words per minute implementation
  */
-impl Operation for OpSetWpm {
+impl Operation for OpSetMaxWpm {
     fn call(&self, opts: &SharedOptions, st: &mut SharedState) {
         if opts.verbose { println!("-- Setting maximum words per minute to: {}", self.wpm); }
-        st.wpm = self.wpm;
+        st.max_wpm = self.wpm;
     }
 }

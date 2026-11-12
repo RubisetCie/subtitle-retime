@@ -5,14 +5,14 @@ use crate::state::SharedState;
 /*
  * Setting minimum gap structure
  */
-pub struct OpSetGap {
+pub struct OpSetMinGap {
     gap: u64,
 }
 
 /*
  * Argument identifier
  */
-impl OpSetGap {
+impl OpSetMinGap {
     pub fn new(gap: u64) -> Self {
         Self { gap }
     }
@@ -23,9 +23,9 @@ impl OpSetGap {
 /*
  * Setting minimum gap implementation
  */
-impl Operation for OpSetGap {
+impl Operation for OpSetMinGap {
     fn call(&self, opts: &SharedOptions, st: &mut SharedState) {
-        if opts.verbose { println!("-- Setting minimum gap between subtitles to: {}", self.gap); }
-        st.gap = self.gap;
+        if opts.verbose { println!("-- Setting minimum gap between subtitles to: {} ms", self.gap); }
+        st.min_gap = self.gap;
     }
 }
