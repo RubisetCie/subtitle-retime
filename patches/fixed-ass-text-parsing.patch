@@ -1,0 +1,131 @@
+From ca5a35aa33fc4201df279bea897125e5d60ed6d5 Mon Sep 17 00:00:00 2001
+From: Matthieu Carteron <rubisetcie@gmail.com>
+Date: Tue, 24 Nov 2026 21:51:04 +0100
+Subject: [PATCH] Fixed ASS subtitles not parsing the text field properly.
+
+---
+ Cargo.toml |  1 +
+ src/ass.rs | 45 ++++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 37 insertions(+), 9 deletions(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 135d159..a7b59be 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -49,6 +49,7 @@ reqwest = {version = "0.13", optional = true, default-features = false, features
+ serde = {version = "1", features = ["derive"]}
+ serde_json = "1"
+ smallvec = {version = "1", features = ["write", "const_new", "serde"]}
++itertools = "0.15.0"
+ thiserror = "2"
+ tracing = "0.1"
+ tracing-subscriber = {version = "0.3", optional = true}
+diff --git a/src/ass.rs b/src/ass.rs
+index 0b6a54a..d04112d 100644
+--- a/src/ass.rs
++++ b/src/ass.rs
+@@ -10,6 +10,7 @@ use std::collections::HashMap;
+ use std::sync::LazyLock;
+ #[cfg(not(target_arch = "wasm32"))]
+ use tokio::io::AsyncWriteExt;
++use itertools::Itertools;
+ 
+ static RE_DIALOGUE: LazyLock<Regex> = LazyLock::new(|| {
+   Regex::new(r"^(?:Dialogue|Comment):\s*(?:\d+,)?(\d+):(\d+):(\d+)[,.](\d+),(\d+):(\d+):(\d+)[,.](\d+),(?:([^,]*),)?(?:([^,]*),)?(?:(-?\d+),)?(?:(-?\d+),)?(?:(-?\d+),)?(?:([^,]*),)?(?:(\{.*\})?,)?(.+)$").unwrap()
+@@ -19,7 +20,7 @@ static RE_STYLE: LazyLock<Regex> = LazyLock::new(|| {
+   Regex::new(r"^Style:\s*([^,]*),([^,]*),(\d+),([^,]*),([^,]*),([^,]*),([^,]*),(-?\d+),(-?\d+),(-?\d+),(-?\d+),(-?[\d.]+),(-?[\d.]+),(-?[\d.]+),(-?[\d.]+),(\d+),(-?[\d.]+),(-?[\d.]+),(\d+),(\d+),(\d+),(\d+),(\d+)").unwrap()
+ });
+ 
+-static RE_INFO: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^([^:]+):\s*(.*)").unwrap());
++static RE_INFO: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^([^;][^:]+):\s*(.*)").unwrap());
+ 
+ static RE_ASS_TAG_INLINE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\{([^}]*)\}").unwrap());
+ 
+@@ -369,21 +370,47 @@ fn parse_ass_dialogue(line: &str, fields: Option<&[String]>) -> Option<Subtitle>
+ fn dialogue_from_fields(fields: &[String], payload: &str, is_comment: bool) -> Option<Subtitle> {
+   let values: Vec<&str> = payload.split(',').map(str::trim).collect();
+   let idx = |field: &str| fields.iter().position(|f| f == field);
+-  let ti = idx("text")?;
+   let si = idx("start")?;
+   let ei = idx("end")?;
+-  if values.len() <= ti || values.len() <= si || values.len() <= ei {
++  let tfi = idx("text")?;
++  if values.len() <= tfi || values.len() <= si || values.len() <= ei {
+     return None;
+   }
+   // Fields after `Text` are fixed-count trailing columns (Name, margins,
+   // Effect in SSA): take them from the end so Text may contain commas.
+-  let trailing = fields.len() - ti - 1;
++  let tft = fields.len() - tfi - 1;
+   if values.len() < fields.len() {
+     return None;
+   }
++  let mut ti = 0; let mut tc = 0;
++  // Find the starting index of the
++  if tfi > 0 {
++    for c in payload.chars() {
++      if c == ',' {
++        tc += 1;
++      }
++      if tc >= tfi {
++        ti += 1; break;
++      }
++      ti += 1;
++    }
++  }
++  let mut tt = 0; let mut td = 0;
++  // Find the starting index of the
++  if tft > 0 {
++    for c in payload.chars().rev() {
++      if c == ',' {
++        td += 1;
++      }
++      if td >= tft {
++        tt += 1; break;
++      }
++      tt += 1;
++    }
++  }
+   let start = parse_ass_time_str(values[si])?;
+   let end = parse_ass_time_str(values[ei])?;
+-  let text = values[ti..values.len() - trailing].join(",");
++  let text = &payload[ti..payload.len() - tt];
+   let style = idx("style")
+     .and_then(|i| values.get(i).copied())
+     .and_then(|s| {
+@@ -745,14 +772,14 @@ pub fn to_string(
+     buf.push_str("PlayResY: 288\n");
+     buf.push_str("WrapStyle: 0\n");
+   } else {
+-    for (key, value) in info {
++    for (key, value) in info.iter().sorted() {
+       buf.push_str(&format!("{}: {}\n", key, value));
+     }
+   }
+   buf.push('\n');
+ 
+   buf.push_str("[V4+ Styles]\n");
+-  buf.push_str("Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n");
++  buf.push_str("Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding\n");
+   for style in styles {
+     buf.push_str(&format!(
+       "Style: {},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+@@ -784,7 +811,7 @@ pub fn to_string(
+   buf.push('\n');
+ 
+   buf.push_str("[Events]\n");
+-  buf.push_str("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n");
++  buf.push_str("Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text\n");
+   for sub in subtitles {
+     let start = format_ass_timestamp(sub.start);
+     let end = format_ass_timestamp(sub.end);
+@@ -1053,7 +1080,7 @@ pub async fn write_stream<W: tokio::io::AsyncWrite + Unpin>(
+     writer.write_all(b"PlayResY: 288\n").await?;
+     writer.write_all(b"WrapStyle: 0\n").await?;
+   } else {
+-    for (key, value) in info {
++    for (key, value) in info.iter().sorted() {
+       writer
+         .write_all(format!("{}: {}\n", key, value).as_bytes())
+         .await?;
+-- 
